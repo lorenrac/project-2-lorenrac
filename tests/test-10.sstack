@@ -1,0 +1,7 @@
+VAR result = "Try again!"
+IF (result == "winner") {
+  PRINT "Yay! You won!"
+}
+ELSE {
+  PRINT "Boo. You lost."
+}

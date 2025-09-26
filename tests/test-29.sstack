@@ -1,0 +1,8 @@
+VAR sentence = "One sentence is printed backwards."
+VAR reverse = ""
+WHILE (sentence ? " ") {
+  reverse = sentence/" " + " " + reverse
+  sentence = sentence % " "
+}
+reverse = sentence + " " + reverse
+PRINT reverse

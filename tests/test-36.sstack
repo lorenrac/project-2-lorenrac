@@ -1,0 +1,4 @@
+// ERROR: Redeclaring a variable in the same scope.
+VAR my_var = "good"
+VAR my_var = "bad"
+PRINT my_var

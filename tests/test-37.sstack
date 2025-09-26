@@ -1,0 +1,6 @@
+// ERROR: Redeclaring a variable after entering and leaving another scope.
+VAR test="Test!"
+IF (test > "A") {
+  VAR test = "Okay redeclaration in a new scope."  
+}
+VAR test="Bad redeclaration"

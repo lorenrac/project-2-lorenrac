@@ -1,0 +1,6 @@
+// Test the contains operator
+VAR magic = "abra cadabra"
+PRINT "Scanning '" + magic + "'..."
+IF (magic ? 'ab') PRINT " ...has 'ab'"
+IF (magic ? 'bc') PRINT " ...has 'bc'"
+IF (magic ? 'ca') PRINT " ...has 'ca'"

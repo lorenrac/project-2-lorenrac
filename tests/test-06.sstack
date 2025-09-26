@@ -1,0 +1,10 @@
+// Try a bunch of scopes.
+PRINT "Scope 0"
+{
+  PRINT "Scope 1"
+  {
+    PRINT "Scope 2"
+  }
+  PRINT "Scope 1 again"
+}
+PRINT "Scope 0 again"

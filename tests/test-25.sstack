@@ -1,0 +1,7 @@
+// Test a WHILE loop
+VAR a = "aaaaaaaa"
+WHILE (a) {
+  PRINT a
+  a = a - 'a'
+}
+PRINT "Done!"

@@ -1,0 +1,2 @@
+// ERROR: VAR must be followed by a variable name.
+VAR "not_a_variable"

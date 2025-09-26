@@ -1,0 +1,2 @@
+// Simple % operation
+PRINT "After the cut off" % "cut"

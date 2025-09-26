@@ -1,0 +1,2 @@
+// ERROR: Don't allow non-associative chaining.
+IF ("A" < "B" < "C") PRINT "Chaining too far..."

@@ -1,0 +1,2 @@
+// Multiple operations in a single expression.
+PRINT "ABC" + "DEF" + "GHI"

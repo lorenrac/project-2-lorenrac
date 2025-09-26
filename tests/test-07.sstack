@@ -1,0 +1,3 @@
+// Simple IF
+IF ("1") PRINT "Printed!"
+IF ("") PRINT "Should not print!"

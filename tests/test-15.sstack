@@ -1,0 +1,4 @@
+// Simple assignment operation
+VAR test_var = "version 1"
+test_var = "version 2"
+PRINT test_var

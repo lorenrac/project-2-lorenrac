@@ -1,0 +1,2 @@
+// Simple + operation.
+PRINT "Part1" + "Part2"

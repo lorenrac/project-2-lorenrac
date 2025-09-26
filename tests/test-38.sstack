@@ -1,0 +1,3 @@
+// ERROR: Cannot print a variable before declaring it.
+PRINT my_var
+VAR my_var = "Too late."

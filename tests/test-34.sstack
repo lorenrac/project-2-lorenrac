@@ -1,0 +1,4 @@
+// Try a while with initially false condition.
+VAR s = ""
+WHILE (s) { PRINT "Don't print this!" }
+PRINT "Done."

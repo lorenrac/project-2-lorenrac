@@ -1,0 +1,4 @@
+// ERROR: Mis-placed ELSE
+VAR count = "aaaa"
+WHILE (count) count = count - "a"
+ELSE PRINT "Illegal ELSE"

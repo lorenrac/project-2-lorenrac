@@ -1,0 +1,5 @@
+// Create multiple variables.
+VAR rpg = "Ars Magica"
+VAR name = "Dr." + "Ofria" // Expressions are allowed.
+PRINT rpg
+PRINT name

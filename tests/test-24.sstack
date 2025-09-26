@@ -1,0 +1,5 @@
+// Try a ! operator in an IF
+VAR x = "testing"
+IF (!x) PRINT "failed."
+ELSE x = !x
+IF (!x) PRINT "passed."

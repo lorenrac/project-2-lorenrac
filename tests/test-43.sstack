@@ -1,0 +1,3 @@
+// ERROR: Missing close brace
+IF ("1") {
+  PRINT "When will it end?"

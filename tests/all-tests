@@ -1,0 +1,257 @@
+// Print a single string to the screen
+PRINT "TestOutput"
+---
+// Print a string with single quotes and spaces.
+PRINT 'This is a bigger test'
+---
+// Programs can have multiple print lines.
+PRINT "3..."
+PRINT "2..."
+PRINT "1..."
+PRINT "Blastoff!"
+---
+// Try creating a variable.
+VAR variable = "This is a variable."
+PRINT variable
+---
+// Create multiple variables.
+VAR rpg = "Ars Magica"
+VAR name = "Dr." + "Ofria" // Expressions are allowed.
+PRINT rpg
+PRINT name
+---
+// Try adding a scope.
+PRINT "Global Scope"
+{
+  PRINT "Internal Scope"
+}
+---
+// Try a bunch of scopes.
+PRINT "Scope 0"
+{
+  PRINT "Scope 1"
+  {
+    PRINT "Scope 2"
+  }
+  PRINT "Scope 1 again"
+}
+PRINT "Scope 0 again"
+---
+// Simple IF
+IF ("1") PRINT "Printed!"
+IF ("") PRINT "Should not print!"
+---
+// IF with ELSE
+IF ("1") PRINT "TRUE!"
+ELSE PRINT "NOT TRUE!"
+IF ("") PRINT "NOT FALSE!"
+ELSE PRINT "FALSE!"
+---
+// IF with scoped body.
+IF ("1") {
+  PRINT "First line of IF body!"
+  PRINT "Second line of IF body!"
+}
+IF ("") {
+  PRINT "This shouldn't print!"
+  PRINT "Nor should this!"
+}
+---
+VAR result = "Try again!"
+IF (result == "winner") {
+  PRINT "Yay! You won!"
+}
+ELSE {
+  PRINT "Boo. You lost."
+}
+---
+// Simple + operation.
+PRINT "Part1" + "Part2"
+---
+// Simple - operation
+PRINT "A long statement" - " long"
+---
+// Simple / operation
+PRINT "Before the cut off" / "cut"
+---
+// Simple % operation
+PRINT "After the cut off" % "cut"
+---
+// Simple assignment operation
+VAR test_var = "version 1"
+test_var = "version 2"
+PRINT test_var
+---
+// Multiple operations in a single expression.
+PRINT "ABC" + "DEF" + "GHI"
+---
+// Multiple DIFFERENT operations with same precedence in a single expression.
+// Should remove the FIRST put.
+PRINT "Input1" + "Input2" - "put"
+---
+// Multiple DIFFERENT operations with DIFFERENT precedence in a single expression.
+// Should remove the SECOND put and everything after (due to order of operations)
+PRINT "Input1" + "Input2" / "put"
+---
+// Multiple DIFFERENT operations with DIFFERENT precedence in a single expression.
+// Should remove the SECOND put and everything after (due to order of operations)
+PRINT "Input1" % "p" + "Input2" / "u"
+---
+PRINT "Pave" + "Statement" % "te"
+---
+// Equations with variables
+VAR hello = "Hello"
+VAR world = "World"
+PRINT hello + " " + world
+---
+// Test the contains operator
+VAR magic = "abra cadabra"
+PRINT "Scanning '" + magic + "'..."
+IF (magic ? 'ab') PRINT " ...has 'ab'"
+IF (magic ? 'bc') PRINT " ...has 'bc'"
+IF (magic ? 'ca') PRINT " ...has 'ca'"
+---
+// Try a ! operator.
+PRINT !""
+---
+// Try a ! operator in an IF
+VAR x = "testing"
+IF (!x) PRINT "failed."
+ELSE x = !x
+IF (!x) PRINT "passed."
+---
+// Test a WHILE loop
+VAR a = "aaaaaaaa"
+WHILE (a) {
+  PRINT a
+  a = a - 'a'
+}
+PRINT "Done!"
+---
+// Chained assignment.
+VAR x = "Heads"
+VAR y = x = "Tails"
+PRINT x
+PRINT y
+---
+VAR countup = ""
+WHILE (countup <= "bbbbbb") {
+  PRINT "Ping!"
+  countup = countup + "bb"
+}
+---
+VAR sentence = "This sentence should be printed one word per line."
+WHILE (sentence ? " ") {
+  PRINT sentence / " "
+  sentence = sentence % " "
+}
+PRINT sentence
+---
+VAR sentence = "One sentence is printed backwards."
+VAR reverse = ""
+WHILE (sentence ? " ") {
+  reverse = sentence/" " + " " + reverse
+  sentence = sentence % " "
+}
+reverse = sentence + " " + reverse
+PRINT reverse
+---
+// Sort! (without functions...)
+VAR str1 = "The End"
+VAR str2 = "First"
+VAR str3 = "Middle"
+VAR temp = ""
+IF (str1 > str2) {
+  temp = str1
+  str1 = str2
+  str2 = temp
+}
+IF (str1 > str3) {
+  temp = str1
+  str1 = str3
+  str3 = temp
+}
+IF (str2 > str3) {
+  temp = str2
+  str2 = str3
+  str3 = temp
+}
+PRINT str1
+PRINT str2
+PRINT str3
+---
+// Test some edge case:
+PRINT "Trim Back:  " + "hello" / "x"  // expect: "hello"
+PRINT "Trim Front: " + "hello" % "x"  // expect: ""
+PRINT "Remove:     " + "hello" - "x"  // expect: "hello"
+---
+// More tests of comparisons
+PRINT ("a" == "a")    // expect: "1"
+PRINT ("a" != "a")    // expect: ""
+PRINT ("ab" < "b")    // expect: "1"
+PRINT ("b" <= "ab")   // expect: ""   (lexicographic)
+PRINT ("abc" ? "bc")  // expect: "1"
+---
+// Shadowing test
+VAR x = "Outer"
+{
+  PRINT x          // New version not year created; print "Outer"
+  VAR x = "Inner"  // New (shadowed) version.
+  PRINT x          // Now print "Inner"
+}
+PRINT x            // Back to outer scope, so print "Outer"
+---
+// Try a while with initially false condition.
+VAR s = ""
+WHILE (s) { PRINT "Don't print this!" }
+PRINT "Done."
+---
+// Precedence stress-test
+PRINT "X" + ("YY" / "Y") + ("zz" % "z")   // expect: X + "" + "z" => Xz
+PRINT ("ab" + "cd") - "bc"                // expect: ad
+---
+// ERROR: Redeclaring a variable in the same scope.
+VAR my_var = "good"
+VAR my_var = "bad"
+PRINT my_var
+---
+// ERROR: Redeclaring a variable after entering and leaving another scope.
+VAR test="Test!"
+IF (test > "A") {
+  VAR test = "Okay redeclaration in a new scope."  
+}
+VAR test="Bad redeclaration"
+---
+// ERROR: Cannot print a variable before declaring it.
+PRINT my_var
+VAR my_var = "Too late."
+---
+// ERROR: VAR must be followed by a variable name.
+VAR "not_a_variable"
+---
+// ERROR: Illegal assignment.
+"left" = "right"
+---
+// ERROR: Missing parens on IF
+IF "abd" < "def" PRINT "problem!"
+---
+// ERROR: Missing close paren
+PRINT "test" + ("test" - "es"
+---
+// ERROR: Missing close brace
+IF ("1") {
+  PRINT "When will it end?"
+---
+// ERROR: Don't allow non-associative chaining.
+IF ("A" < "B" < "C") PRINT "Chaining too far..."
+---
+// ERROR: Invalid symbol in an expression.
+PRINT "abc" * "def"
+---
+// ERROR: Dangling operator
+PRINT "1" + "2" + "34" +
+---
+// ERROR: Mis-placed ELSE
+VAR count = "aaaa"
+WHILE (count) count = count - "a"
+ELSE PRINT "Illegal ELSE"

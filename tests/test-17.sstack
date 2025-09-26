@@ -1,0 +1,3 @@
+// Multiple DIFFERENT operations with same precedence in a single expression.
+// Should remove the FIRST put.
+PRINT "Input1" + "Input2" - "put"

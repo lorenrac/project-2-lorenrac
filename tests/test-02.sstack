@@ -1,0 +1,5 @@
+// Programs can have multiple print lines.
+PRINT "3..."
+PRINT "2..."
+PRINT "1..."
+PRINT "Blastoff!"

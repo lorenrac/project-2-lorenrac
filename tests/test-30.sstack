@@ -1,0 +1,23 @@
+// Sort! (without functions...)
+VAR str1 = "The End"
+VAR str2 = "First"
+VAR str3 = "Middle"
+VAR temp = ""
+IF (str1 > str2) {
+  temp = str1
+  str1 = str2
+  str2 = temp
+}
+IF (str1 > str3) {
+  temp = str1
+  str1 = str3
+  str3 = temp
+}
+IF (str2 > str3) {
+  temp = str2
+  str2 = str3
+  str3 = temp
+}
+PRINT str1
+PRINT str2
+PRINT str3

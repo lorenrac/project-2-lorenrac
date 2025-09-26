@@ -1,0 +1,6 @@
+// More tests of comparisons
+PRINT ("a" == "a")    // expect: "1"
+PRINT ("a" != "a")    // expect: ""
+PRINT ("ab" < "b")    // expect: "1"
+PRINT ("b" <= "ab")   // expect: ""   (lexicographic)
+PRINT ("abc" ? "bc")  // expect: "1"

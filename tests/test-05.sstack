@@ -1,0 +1,5 @@
+// Try adding a scope.
+PRINT "Global Scope"
+{
+  PRINT "Internal Scope"
+}

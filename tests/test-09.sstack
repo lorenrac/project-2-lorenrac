@@ -1,0 +1,9 @@
+// IF with scoped body.
+IF ("1") {
+  PRINT "First line of IF body!"
+  PRINT "Second line of IF body!"
+}
+IF ("") {
+  PRINT "This shouldn't print!"
+  PRINT "Nor should this!"
+}

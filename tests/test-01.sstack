@@ -1,0 +1,2 @@
+// Print a string with single quotes and spaces.
+PRINT 'This is a bigger test'

@@ -1,0 +1,6 @@
+VAR sentence = "This sentence should be printed one word per line."
+WHILE (sentence ? " ") {
+  PRINT sentence / " "
+  sentence = sentence % " "
+}
+PRINT sentence

@@ -1,0 +1,3 @@
+// Try creating a variable.
+VAR variable = "This is a variable."
+PRINT variable

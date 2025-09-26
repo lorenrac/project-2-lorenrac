@@ -1,0 +1,2 @@
+// ERROR: Illegal assignment.
+"left" = "right"

@@ -1,0 +1,4 @@
+// Equations with variables
+VAR hello = "Hello"
+VAR world = "World"
+PRINT hello + " " + world

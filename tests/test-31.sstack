@@ -1,0 +1,4 @@
+// Test some edge case:
+PRINT "Trim Back:  " + "hello" / "x"  // expect: "hello"
+PRINT "Trim Front: " + "hello" % "x"  // expect: ""
+PRINT "Remove:     " + "hello" - "x"  // expect: "hello"

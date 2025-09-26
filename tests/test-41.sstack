@@ -1,0 +1,2 @@
+// ERROR: Missing parens on IF
+IF "abd" < "def" PRINT "problem!"

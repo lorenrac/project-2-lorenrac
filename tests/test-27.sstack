@@ -1,0 +1,5 @@
+VAR countup = ""
+WHILE (countup <= "bbbbbb") {
+  PRINT "Ping!"
+  countup = countup + "bb"
+}

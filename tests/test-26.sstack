@@ -1,0 +1,5 @@
+// Chained assignment.
+VAR x = "Heads"
+VAR y = x = "Tails"
+PRINT x
+PRINT y

@@ -1,0 +1,3 @@
+// Precedence stress-test
+PRINT "X" + ("YY" / "Y") + ("zz" % "z")   // expect: X + "" + "z" => Xz
+PRINT ("ab" + "cd") - "bc"                // expect: ad

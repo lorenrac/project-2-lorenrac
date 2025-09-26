@@ -1,0 +1,2 @@
+// ERROR: Invalid symbol in an expression.
+PRINT "abc" * "def"

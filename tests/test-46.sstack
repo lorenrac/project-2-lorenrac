@@ -1,0 +1,2 @@
+// ERROR: Dangling operator
+PRINT "1" + "2" + "34" +

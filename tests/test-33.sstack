@@ -1,0 +1,8 @@
+// Shadowing test
+VAR x = "Outer"
+{
+  PRINT x          // New version not year created; print "Outer"
+  VAR x = "Inner"  // New (shadowed) version.
+  PRINT x          // Now print "Inner"
+}
+PRINT x            // Back to outer scope, so print "Outer"
