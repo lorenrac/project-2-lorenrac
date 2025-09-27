@@ -1,0 +1,41 @@
+# This is an auto-generated Emplex configuration file.
+
+# Configuration settings (lines starting with ':' are config options)
+:out_filename lexer.hpp
+:lexer_name Lexer
+:token_name Token
+:dfa_name DFA
+:inc_guards EMPLEX_LEXER_HPP_INCLUDE_
+:name_space emplex
+:use_token_lexemes 1
+:use_token_line_num 1
+:use_token_column 0
+
+# Token names and regular expressions
+IF IF
+ELSE ELSE
+WHILE WHILE
+VAR VAR
+PRINT PRINT
+EQ ==
+NEQ !=
+LE <=
+GE >=
+LT <
+GT >
+ASSIGN =
+NOT !
+QUESTION \?
+PLUS \+
+MINUS \-
+SLASH /
+PERCENT %
+LPAREN \(
+RPAREN \)
+LBRACE \{
+RBRACE \}
+ID [a-zA-Z_][a-zA-Z0-9_]*
+LIT_STRING (\"([^\n\"]|(\\.))*\")|(\'([^\n\']|(\\.))*\')
+-COMMENT "//".*
+-WHITESPACE [ \t]+
+NEWLINE \n

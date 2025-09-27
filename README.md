@@ -1,11 +1,8 @@
-# Project1-Template
+# Project 2
 
-This repository is initialized with template code for students starting on Project 1
+This repository is the code for Rachel Loren's project 2
 
-You should:  
+# Test Cases
+- tests: passing /
 
-- Create at least one new example test file in the my_tests/ directory.
-
-- Implement the StringStack language, building off of the provided Project1.cpp
-
-- Replace this README with text that specifies which tests your program passes and which it does not pass.  You should also include anything else you want us to know when grading your program, including anywhere you used code from.
+- my_tests: passing /

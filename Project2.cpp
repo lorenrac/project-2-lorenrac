@@ -6,12 +6,12 @@
 #include <unordered_map>
 #include <vector>
 
-// #include "AST.hpp"          // Build file for Abstract Syntax Tree nodes
+#include "AST.hpp"          // Build file for Abstract Syntax Tree nodes
 #include "helpers.hpp"         // A place to put useful helper functions.
-// #include "lexer.hpp"        // Auto-generate file from Emplex
-// #include "SymbolTable.hpp"  // Build file for your own Symbol Table
+#include "lexer.hpp"        // Auto-generate file from Emplex
+#include "SymbolTable.hpp"  // Build file for your own Symbol Table
 
-// using emplex::Lexer;        // Simplify use of Lexer and Token types.
+using emplex::Lexer;        // Simplify use of Lexer and Token types.
 // using emplex::Token;
 
 int main(int argc, char * argv[])
@@ -22,6 +22,12 @@ int main(int argc, char * argv[])
   }
 
   // Run input file through a lexer to tokenize it.
+  std::ifstream fs(argv[1]);
+  Lexer lexer;
+  lexer.Tokenize(fs);
+  SymbolTable table;
+
   // Parse the tokens to generate an Abstract Syntax Tree (AST).
   // Run the AST to execute the program.
+  return 0;
 }

@@ -1,0 +1,5 @@
+class SymbolTable {
+private:
+
+public:
+};
