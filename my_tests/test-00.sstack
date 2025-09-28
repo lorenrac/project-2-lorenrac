@@ -1,0 +1,30 @@
+// Tons of scopes
+PRINT "Scope 0"
+{
+  PRINT "Scope 1"
+  {
+    PRINT "Scope 2"
+  }
+  PRINT "Scope 1 again"
+  {
+    PRINT "Scope 2 again"
+    {
+      PRINT "Scope 3"
+      {
+        PRINT "Scope 4"
+      }
+      PRINT "Scope 3 again"
+      {
+        PRINT "Scope 4 again"
+        {
+          PRINT "Scope 5"
+        }
+        PRINT "Scope 4 again"
+      }
+      PRINT "Scope 3 again"
+    }
+    PRINT "Scope 2 again"
+  }
+  PRINT "Scope 1 again"
+}
+PRINT "Scope 0 again"
