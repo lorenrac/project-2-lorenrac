@@ -91,6 +91,87 @@ private:
     return "";
   }
 
+  bool ParseExpression(const Token & token) {
+    bool valid = false;
+    bool notPresent = false;
+    bool rightSide = false;
+    std::string leftValue;
+    std::string rightValue;
+    Token op;
+
+    // if token id is Lexer::ID_NOT
+    Token current = lexer.Use();
+    if (current == Lexer::ID_NOT) {
+      // not = true
+      //move to next token
+      notPresent = true;
+      if (!lexer.Any()) Error(current, "Expected expression after NOT");
+      current = lexer.Use();
+    }
+
+    // if token id is Lexer::ID_ID or token id is Lexer::ID_LIT_STRING
+    if (current == Lexer::ID_ID || current == Lexer::ID_LIT_STRING) {
+      // set left side variable to the value of the token
+      leftValue = TokenToString(current);
+
+      // if token id is NOT Lexer::ID_RPAREN
+      if (lexer.Any() && lexer.Peek() != Lexer::ID_RPAREN) {
+        rightSide = true;
+
+        // if token id is an operator id
+        Token possible_op = lexer.Use();
+        switch (possible_op.id) {
+          case Lexer::ID_EQ:
+          case Lexer::ID_NEQ:
+          case Lexer::ID_LE:
+          case Lexer::ID_GE:
+          case Lexer::ID_LT:
+          case Lexer::ID_GT:
+          case Lexer::ID_QUESTION:
+            // set operator type
+            op = possible_op;
+            break;
+          default:
+            Error(possible_op, "Expected comparison operator, got '", possible_op.lexeme, "'");
+        }
+
+        // if token id is Lexer::ID_ID or token id is Lexer::ID_LIT_STRING
+        if (!lexer.Any()) Error(op, "Expected right-hand expression after operator");
+        // set right side variable to the value of the token
+        Token right = lexer.Use();
+        if (right == Lexer::ID_ID || right == Lexer::ID_LIT_STRING) {
+          rightValue = TokenToString(right);
+        } else {
+          Error(right, "Expected identifier or string literal after operator");
+        }
+      }
+    } 
+    else {
+      Error(current, "Expected identifier or string literal in expression");
+    }
+
+    if (!rightSide) {
+      valid = !leftValue.empty();
+    } 
+    else {
+    // Compare leftValue and rightValue based on operator
+    if (op == Lexer::ID_EQ)        valid = (leftValue == rightValue);
+    else if (op == Lexer::ID_NEQ)  valid = (leftValue != rightValue);
+    else if (op == Lexer::ID_LT)   valid = (leftValue < rightValue);
+    else if (op == Lexer::ID_LE)   valid = (leftValue <= rightValue);
+    else if (op == Lexer::ID_GT)   valid = (leftValue > rightValue);
+    else if (op == Lexer::ID_GE)   valid = (leftValue >= rightValue);
+    else if (op == Lexer::ID_QUESTION) valid = !rightValue.empty();
+    else Error(op, "Unknown operator in expression");
+  }
+
+  if (notPresent) {
+    valid = !valid;
+  }
+  return valid;
+}
+
+
 public:
   StringStackPlusPlus(std::string filename) : filename(filename) { }
 
@@ -104,47 +185,75 @@ public:
 
   // Interpret the next full line of code.
   void ProcessLine() {
+    //std::cout<< "ProcessLine reached" << std::endl;
     assert(lexer.Any()); // Make sure there's something to process.
 
     // Figure out which type of token we are working with.
     auto token = lexer.Use();
+    
     switch (token) {
-      case Lexer::ID_PRINT:  ProcessPRINT(token);  break;
-      case Lexer::ID_IF:   ProcessIF(token);   break;
-      case Lexer::ID_ELSE:    ProcessELSE(token);    break;
-      case Lexer::ID_WHILE: ProcessWHILE(token); break;
-      case Lexer::ID_VAR:  ProcessVAR(token);  break;
+      case Lexer::ID_PRINT:  {
+        ProcessPRINT(token);  
+        break;
+      }
+      case Lexer::ID_IF:   {
+        //std::cout<< "Is a if line" << std::endl;
+        ProcessIF(token);   
+        break;
+      }
+      case Lexer::ID_WHILE: {
+        ProcessWHILE(token); 
+        break;
+      }
+      case Lexer::ID_VAR:  {
+        ProcessVAR(token);  
+        break;
+      }
 
-      case Lexer::ID_EQ:  ProcessEQ(token);  break;
-      case Lexer::ID_NEQ:  ProcessNEQ(token);  break;
-      case Lexer::ID_LE:  ProcessLE(token);  break;
-      case Lexer::ID_GE:  ProcessGE(token);  break;
-      case Lexer::ID_LT:  ProcessLT(token);  break;
-      case Lexer::ID_GT:  ProcessGT(token);  break;
-      case Lexer::ID_ASSIGN:  ProcessASSIGN(token);  break;
-      case Lexer::ID_NOT:  ProcessNOT(token);  break;
-      case Lexer::ID_QUESTION:  ProcessQUESTION(token);  break;
-      case Lexer::ID_PLUS:  ProcessPLUS(token);  break;
-      case Lexer::ID_MINUS:  ProcessMINUS(token);  break;
-      case Lexer::ID_SLASH:  ProcessSLASH(token);  break;
-      case Lexer::ID_PERCENT:  ProcessPERCENT(token);  break;
-      case Lexer::ID_LPAREN:  ProcessLPAREN(token);  break;
-      case Lexer::ID_RPAREN:  ProcessRPAREN(token);  break;
-      case Lexer::ID_LBRACE:  ProcessLBRACE(token);  break;
-      case Lexer::ID_RBRACE:  ProcessRBRACE(token);  break;
-
+      case Lexer::ID_LBRACE: break;
+      case Lexer::ID_RBRACE: break;
       case Lexer::ID_NEWLINE: return; // Empty line -- nothing to process.
       default:
         // If we made it here, this is not a valid line.
+        //std::cout << "1 ERROR REACHED" << std::endl;
         Error(token, "Unknown command '", token.lexeme, "'");
     }
 
     // Make sure the line ends in a newline.
     if (lexer.Any()) {
       Token line_end = lexer.Use();
-      if (line_end != Lexer::ID_NEWLINE) UnexpectedToken(line_end);
+      if (line_end != Lexer::ID_NEWLINE) {
+        //std::cout <<"Unexpected reached" << std::endl;
+        UnexpectedToken(line_end);
+      }
+      else if (line_end == Lexer::ID_IF) {
+        //std::cout << "UNEXPECTED IF REACHED" << std::endl;
+      }
     }
   }
+
+  void ProcessSingleStatement() {
+    if (!lexer.Any()) return;
+    Token token = lexer.Use();
+
+    switch (token.id) {
+      case Lexer::ID_PRINT:
+        ProcessPRINT(token);
+        break;
+      case Lexer::ID_IF:
+        ProcessIF(token);
+        break;
+      case Lexer::ID_VAR:
+        ProcessVAR(token);
+        break;
+      case Lexer::ID_WHILE:
+        ProcessWHILE(token);
+        break;
+      default:
+        UnexpectedToken(token);
+    }
+  }
+
 
   void ProcessPRINT(const Token & token) {
     std::string out;
@@ -156,17 +265,58 @@ public:
   }
 
   void ProcessIF(const Token & token) {
-    // TODO
-    if (token) {
-      return;
+    // Handle LParen
+    if (!lexer.Any() || lexer.Peek() != Lexer::ID_LPAREN) {
+      Error(token, "Expected '(' after IF");
     }
-  }
+    lexer.Use();
 
-  void ProcessELSE(const Token & token) {
-    // TODO   
-    if (token) {
-      return;
+    bool condition = ParseExpression(token);
+
+    if (!lexer.Any() || lexer.Peek() != Lexer::ID_RPAREN) {
+      Error(token, "Expected ')' after IF");
     }
+    lexer.Use();
+
+    if (lexer.Any() && lexer.Peek() == Lexer::ID_LBRACE) {
+      lexer.Use();
+
+      if (condition) {
+        // Execute lines until '}'
+        while (lexer.Any() && lexer.Peek() != Lexer::ID_RBRACE) {
+          ProcessLine();
+        }
+      } else {
+        // Skip lines until matching '}'
+        int brace_depth = 1;
+        while (lexer.Any() && brace_depth > 0) {
+          Token next = lexer.Use();
+          if (next == Lexer::ID_LBRACE) brace_depth++;
+          else if (next == Lexer::ID_RBRACE) brace_depth--;
+        }
+      }
+
+      // Make sure we found the closing '}'
+      if (!lexer.Any() || lexer.Peek() != Lexer::ID_RBRACE) {
+        Error(token, "Expected '}' to close IF block");
+      }
+      lexer.Use(); // consume '}'
+    } else {
+      // Single line IF
+      //std::cout<< "Single line if" << std::endl;
+      if (condition) {
+        //std::cout<< "Single line if true" << std::endl;
+        ProcessSingleStatement();
+      } else {
+        // Skip the next line
+        //std::cout<< "Single line if false" << std::endl;
+        while (lexer.Any()) {
+          Token tok = lexer.Use();
+          if (tok == Lexer::ID_NEWLINE) return;
+        }
+      }
+    }
+
   }
 
   void ProcessWHILE(const Token & token) {
@@ -177,125 +327,6 @@ public:
   }
 
   void ProcessVAR(const Token & token) {
-    // TODO
-    if (token) {
-      return;
-    }
-  }
-
-  void ProcessEQ(const Token & token) {
-    // TODO
-    if (token) {
-      return;
-    }
-  }
-
-  void ProcessNEQ(const Token & token) {
-    // TODO
-    if (token) {
-      return;
-    }
-  }
-
-  void ProcessLE(const Token & token) {
-    // TODO
-    if (token) {
-      return;
-    }
-  }
-
-  void ProcessGE(const Token & token) {
-    // TODO
-    if (token) {
-      return;
-    }
-  }
-
-  void ProcessLT(const Token & token) {
-    // TODO
-    if (token) {
-      return;
-    }
-  }
-
-  void ProcessGT(const Token & token) {
-    // TODO
-    if (token) {
-      return;
-    }
-  }
-
-  void ProcessASSIGN(const Token & token) {
-    // TODO
-    if (token) {
-      return;
-    }
-  }
-
-  void ProcessNOT(const Token & token) {
-    // TODO
-    if (token) {
-      return;
-    }
-  }
-
-  void ProcessQUESTION(const Token & token) {
-    // TODO
-    if (token) {
-      return;
-    }
-  }
-
-  void ProcessPLUS(const Token & token) {
-    // TODO
-    if (token) {
-      return;
-    }
-  }
-
-  void ProcessMINUS(const Token & token) {
-    // TODO
-    if (token) {
-      return;
-    }
-  }
-
-  void ProcessSLASH(const Token & token) {
-    // TODO
-    if (token) {
-      return;
-    }
-  }
-
-  void ProcessPERCENT(const Token & token) {
-    // TODO
-    if (token) {
-      return;
-    }
-  }
-
-  void ProcessLPAREN(const Token & token) {
-    // TODO
-    if (token) {
-      return;
-    }
-  }
-
-  void ProcessRPAREN(const Token & token) {
-    // TODO
-    if (token) {
-      return;
-    }
-  }
-
-  void ProcessLBRACE(const Token & token) {
-    // TODO
-    if (token) {
-      return;
-    }
-  }
-
-  void ProcessRBRACE(const Token & token) {
     // TODO
     if (token) {
       return;

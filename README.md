@@ -3,12 +3,13 @@
 This repository is the code for Rachel Loren's project 2
 
 # Test Cases
-- tests: passing 17/48 (Failed 31)
+- tests: passing 18/48 (Failed 30)
     - 00
     - 01
     - 02
     - 05
     - 06
+    - 07
     - 36
     - 37
     - 38
