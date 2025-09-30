@@ -328,9 +328,50 @@ public:
 
   void ProcessVAR(const Token & token) {
     // TODO
-    if (token) {
-      return;
+    if (!lexer.Any() || lexer.Peek() != Lexer::ID_ID) {
+      Error(token, "Expected identifer after VAR");
     }
+    Token var_token = lexer.Use();
+
+    // store variable name
+    std::string var_name = var_token.lexeme;
+
+    // check redeclaration
+    if (symbol_table.find(var_name) != symbol_table.end()) {
+      Error(var_token, "Variable '", var_name, "' already declared");
+    }
+
+    // consume '=' operator
+    if (!lexer.Any() || lexer.Peek() != Lexer::ID_ASSIGN) {
+      Error(var_token, "Expected '=' after variable name");
+    }
+    lexer.Use();
+
+    // store variable value (is Lexer::ID_LIT_STRING)
+    std::string result;
+    if (!lexer.Any()) Error(var_token, "Expected expression after '='");
+    Token current = lexer.Use();
+    if (current == Lexer::ID_ID || current == Lexer::ID_LIT_STRING) {
+      result = TokenToString(current);
+    } else {
+      Error(current, "Expected string literal or variable in expression");
+    }
+
+    // check if next token is '+' operator
+    // if is is, add token after '+' to the variable value
+    while (lexer.Any() && lexer.Peek() == Lexer::ID_PLUS) {
+      lexer.Use(); // consume '+'
+
+      if (!lexer.Any()) Error(current, "Expected value after '+'");
+      Token next = lexer.Use();
+      if (next == Lexer::ID_ID || next == Lexer::ID_LIT_STRING) {
+        result += TokenToString(next);
+      } else {
+        Error(next, "Expected string literal or variable after '+'");
+      }
+    }
+
+    symbol_table[var_name] = result;
   }
 };
 
