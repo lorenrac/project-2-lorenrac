@@ -240,7 +240,9 @@ private:
     else if (op == Lexer::ID_LE)   valid = (leftValue <= rightValue);
     else if (op == Lexer::ID_GT)   valid = (leftValue > rightValue);
     else if (op == Lexer::ID_GE)   valid = (leftValue >= rightValue);
-    else if (op == Lexer::ID_QUESTION) valid = !rightValue.empty();
+    else if (op == Lexer::ID_QUESTION) {
+      valid = (leftValue.find(rightValue) != std::string::npos);
+    }
     else Error(op, "Unknown operator in expression");
   }
 
@@ -337,6 +339,9 @@ public:
       case Lexer::ID_WHILE:
         ProcessWHILE(token);
         break;
+      case Lexer::ID_ID:
+        ProcessID(token);
+        break;
       default:
         UnexpectedToken(token);
     }
@@ -344,10 +349,16 @@ public:
 
 
   void ProcessPRINT(const Token & token) {
+    bool reverse = false;
     std::string out;
     if (!HasArg()) { out = StackPop(token); }
     else {
       Token next = lexer.Peek();
+      if (next.id == Lexer::ID_NOT) {
+        reverse = true;
+        lexer.Use();
+        next = lexer.Peek();
+      }
       if (next == Lexer::ID_ID || next == Lexer::ID_LIT_STRING) {
         lexer.Use();
         if (lexer.Any() && (lexer.Peek() == Lexer::ID_PLUS || lexer.Peek() == Lexer::ID_MINUS 
@@ -364,6 +375,12 @@ public:
       else {
             Error(next, "Unexpected token in PRINT statement");
       }
+    }
+    if (out == "" && reverse == false) {
+      out = "0";
+    }
+    else if (out == "" && reverse == true) {
+      out = "1";
     }
     std::cout << out << std::endl;
   }
@@ -541,6 +558,7 @@ public:
   void ProcessID(const Token & token) {
     // check if id is in the symbol_table
     // if not, throw an error
+    bool reverse = false;
     std::string name = token.lexeme;
     if (symbol_table.find(name) == symbol_table.end()) {
       Error(token, "Assignment to undeclared variable '", name, "'");
@@ -558,6 +576,14 @@ public:
       Error(token, "Expected expression after '='");
     }
     Token first = lexer.Use();
+    if (first.id == Lexer::ID_NOT) {
+      reverse = true;
+      if (!lexer.Any()) {
+        Error(token, "Expected expression after '!'");
+      }
+      first = lexer.Use();
+    }
+
     std::string value;
     if (first == Lexer::ID_ID || first == Lexer::ID_LIT_STRING) {
       if (lexer.Any() && (
@@ -567,11 +593,29 @@ public:
         value = CompleteCalculation(first);
       } else {
         value = TokenToString(first);
+        /*lexer.Use();
+        if (lexer.Any() && lexer.Peek() == Lexer::ID_ASSIGN){
+          lexer.Use();
+          if (lexer.Any() && lexer.Peek() == Lexer::ID_ID) {
+            Token chain = lexer.Use();
+            std::string chainName = chain.lexeme;
+            std::string chainValue = value;
+            symbol_table[chainName] = chainValue;
+          }
+        }*/
       }
     } else {
       Error(first, "Expected identifier or string literal after '='");
     }
 
+    if (reverse) {
+      if (value == "") {
+        value = " ";
+      }
+      else {
+        value = "";
+      }
+    }
     symbol_table[name] = value;
   }
 };
