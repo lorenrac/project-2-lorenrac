@@ -94,6 +94,69 @@ private:
     return "";
   }
 
+  std::string CompleteCalculation(const Token & token) {
+    if (!lexer.Any()) Error(token, "Expected value in calculation");
+
+    // get first string (each string could be either a literal string or a variable)
+    std::string result;
+    //Token current = lexer.Use();
+    if (token == Lexer::ID_ID || token == Lexer::ID_LIT_STRING) {
+        result = TokenToString(token);
+    } else {
+        Error(token, "Expected string literal or variable at start of expression");
+    }
+
+    // while loop to check for additional operators and strings
+    // perform each subsequent calculation as: new = new operatorx stringx
+    while (lexer.Any() && (lexer.Peek() == Lexer::ID_PLUS || lexer.Peek() == Lexer::ID_MINUS 
+      || lexer.Peek() == Lexer::ID_SLASH || lexer.Peek() == Lexer::ID_PERCENT)) {
+        Token op = lexer.Use();
+
+        if (!lexer.Any()) {
+            Error(token, "Expected value after operator");
+        }
+        Token next = lexer.Use();
+        std::string nextStr;
+        if (next == Lexer::ID_ID || next == Lexer::ID_LIT_STRING) {
+            nextStr = TokenToString(next);
+        } else {
+            Error(next, "Expected string literal or variable after operator");
+        }
+
+        switch(op.id) {
+          case Lexer::ID_PLUS: {
+            result += nextStr;
+            break;
+          }
+          case Lexer::ID_MINUS: {
+            size_t pos = result.find(nextStr);
+            if (pos != std::string::npos) {
+                result.erase(pos, nextStr.length());
+            }
+            break;
+          }
+          case Lexer::ID_SLASH: {
+            size_t pos = result.find(nextStr);
+            if (pos != std::string::npos) {
+                result = result.substr(0, pos);
+            }
+            break;
+          }
+          case Lexer::ID_PERCENT: {
+            size_t pos = result.find(nextStr);
+            if (pos != std::string::npos) {
+                result = result.substr(pos + nextStr.length());
+            }
+            break;
+          }
+          default: {
+            break;
+          }
+        }
+    }
+    return result;
+  }
+
   bool ParseExpression(const Token & token) {
     bool valid = false;
     bool notPresent = false;
@@ -267,7 +330,23 @@ public:
     std::string out;
     if (!HasArg()) { out = StackPop(token); }
     else {
-      while (HasArg()) out += TokenToString(lexer.Use());
+      Token next = lexer.Peek();
+      if (next == Lexer::ID_ID || next == Lexer::ID_LIT_STRING) {
+        lexer.Use();
+        if (lexer.Any() && (lexer.Peek() == Lexer::ID_PLUS || lexer.Peek() == Lexer::ID_MINUS 
+          || lexer.Peek() == Lexer::ID_SLASH || lexer.Peek() == Lexer::ID_PERCENT)) {
+            out = CompleteCalculation(next);
+        }
+        else {
+          out = TokenToString(next);
+          while (HasArg()) {
+            out += TokenToString(lexer.Use());
+          }
+        }
+      }
+      else {
+            Error(next, "Unexpected token in PRINT statement");
+      }
     }
     std::cout << out << std::endl;
   }
