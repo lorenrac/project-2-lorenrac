@@ -1,0 +1,3 @@
+VAR hi = "Hi"
+IF (hi == "Hi") PRINT "HI"
+IF (hi != "Hello") PRINT "GOODBYE"

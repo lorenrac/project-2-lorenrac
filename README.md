@@ -3,7 +3,7 @@
 This repository is the code for Rachel Loren's project 2
 
 # Test Cases
-- tests: passing 20/48 (Failed 28)
+- tests: passing 23/48 (Failed 25)
     - 00
     - 01
     - 02
@@ -12,6 +12,9 @@ This repository is the code for Rachel Loren's project 2
     - 05
     - 06
     - 07
+    - 08
+    - 09
+    - 10
     -
     - 36
     - 37
@@ -26,5 +29,6 @@ This repository is the code for Rachel Loren's project 2
     - 46
     - 47
 
-- my_tests: passing 1/1
+- my_tests: passing 2/2
     - 00
+    - 01

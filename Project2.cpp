@@ -23,6 +23,9 @@ private:
   std::vector<std::string> stack;
   std::unordered_map<std::string, std::string> symbol_table;
 
+  bool lastIfCondition = false;
+  bool justProcessedIf = false;
+
   // === Helper Functions ===
 
   // A generic Error function that will provide a custom error for a given token.
@@ -201,6 +204,11 @@ public:
         ProcessIF(token);   
         break;
       }
+      case Lexer::ID_ELSE:   {
+        //std::cout<< "Is a if line" << std::endl;
+        ProcessELSE(token);   
+        break;
+      }
       case Lexer::ID_WHILE: {
         ProcessWHILE(token); 
         break;
@@ -272,6 +280,8 @@ public:
     lexer.Use();
 
     bool condition = ParseExpression(token);
+    lastIfCondition = condition;
+    justProcessedIf = true;
 
     if (!lexer.Any() || lexer.Peek() != Lexer::ID_RPAREN) {
       Error(token, "Expected ')' after IF");
@@ -290,9 +300,16 @@ public:
         // Skip lines until matching '}'
         int brace_depth = 1;
         while (lexer.Any() && brace_depth > 0) {
-          Token next = lexer.Use();
-          if (next == Lexer::ID_LBRACE) brace_depth++;
-          else if (next == Lexer::ID_RBRACE) brace_depth--;
+          Token next = lexer.Peek();
+          if (next == Lexer::ID_LBRACE) {
+            brace_depth++;
+          }
+          else if (next == Lexer::ID_RBRACE) {
+            brace_depth--;
+          }
+          if (brace_depth != 0) {
+              next = lexer.Use();
+          }
         }
       }
 
@@ -311,12 +328,63 @@ public:
         // Skip the next line
         //std::cout<< "Single line if false" << std::endl;
         while (lexer.Any()) {
-          Token tok = lexer.Use();
+          Token tok = lexer.Peek();
           if (tok == Lexer::ID_NEWLINE) return;
+          tok = lexer.Use();
         }
       }
     }
 
+  }
+
+  void ProcessELSE(const Token & token) {
+    if (!justProcessedIf) {
+      Error(token, "ELSE without matching IF");
+    }
+    justProcessedIf = false;  // Reset after ELSE
+    
+    if (lexer.Any() && lexer.Peek() == Lexer::ID_LBRACE) {
+      lexer.Use();
+      if (!lastIfCondition) {
+        // Run else statement
+        while (lexer.Any() && lexer.Peek() != Lexer::ID_RBRACE) {
+          ProcessLine();
+        }
+      } else {
+        // Skip else statement
+        int brace_depth = 1;
+        while (lexer.Any() && brace_depth > 0) {
+          Token next = lexer.Peek();
+          if (next == Lexer::ID_LBRACE) {
+            brace_depth++;
+          }
+          else if (next == Lexer::ID_RBRACE) {
+            brace_depth--;
+          }
+          if (brace_depth != 0) {
+              next = lexer.Use();
+          }
+        }
+      }
+
+      // Consume '}'
+      if (!lexer.Any() || lexer.Peek() != Lexer::ID_RBRACE) {
+        Error(token, "Expected '}' to close ELSE block");
+      }
+      lexer.Use();
+    } else {
+      // Single-line else
+      if (!lastIfCondition) {
+        ProcessSingleStatement();
+      } else {
+        // Skip single statement
+        while (lexer.Any()) {
+          Token tok = lexer.Peek();
+          if (tok == Lexer::ID_NEWLINE) return;
+          tok = lexer.Use();
+        }
+      }
+    }
   }
 
   void ProcessWHILE(const Token & token) {
