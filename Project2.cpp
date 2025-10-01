@@ -94,67 +94,80 @@ private:
     return "";
   }
 
-  std::string CompleteCalculation(const Token & token) {
-    if (!lexer.Any()) Error(token, "Expected value in calculation");
+  std::string ApplyOperator(const Token &op, const std::string &left, const std::string &right) {
+    std::string result = left;
 
-    // get first string (each string could be either a literal string or a variable)
-    std::string result;
-    //Token current = lexer.Use();
-    if (token == Lexer::ID_ID || token == Lexer::ID_LIT_STRING) {
-        result = TokenToString(token);
-    } else {
-        Error(token, "Expected string literal or variable at start of expression");
-    }
-
-    // while loop to check for additional operators and strings
-    // perform each subsequent calculation as: new = new operatorx stringx
-    while (lexer.Any() && (lexer.Peek() == Lexer::ID_PLUS || lexer.Peek() == Lexer::ID_MINUS 
-      || lexer.Peek() == Lexer::ID_SLASH || lexer.Peek() == Lexer::ID_PERCENT)) {
-        Token op = lexer.Use();
-
-        if (!lexer.Any()) {
-            Error(token, "Expected value after operator");
+    switch (op.id) {
+      case Lexer::ID_PLUS: {
+        result += right;
+        break;
+      }
+      case Lexer::ID_MINUS: {
+        size_t pos = result.find(right);
+        if (pos != std::string::npos) {
+          result.erase(pos, right.length());
         }
-        Token next = lexer.Use();
-        std::string nextStr;
-        if (next == Lexer::ID_ID || next == Lexer::ID_LIT_STRING) {
-            nextStr = TokenToString(next);
-        } else {
-            Error(next, "Expected string literal or variable after operator");
+        break;
+      }
+      case Lexer::ID_SLASH: {
+        size_t pos = result.find(right);
+        if (pos != std::string::npos) {
+          result = result.substr(0, pos);
         }
-
-        switch(op.id) {
-          case Lexer::ID_PLUS: {
-            result += nextStr;
-            break;
-          }
-          case Lexer::ID_MINUS: {
-            size_t pos = result.find(nextStr);
-            if (pos != std::string::npos) {
-                result.erase(pos, nextStr.length());
-            }
-            break;
-          }
-          case Lexer::ID_SLASH: {
-            size_t pos = result.find(nextStr);
-            if (pos != std::string::npos) {
-                result = result.substr(0, pos);
-            }
-            break;
-          }
-          case Lexer::ID_PERCENT: {
-            size_t pos = result.find(nextStr);
-            if (pos != std::string::npos) {
-                result = result.substr(pos + nextStr.length());
-            }
-            break;
-          }
-          default: {
-            break;
-          }
+        break;
+      }
+      case Lexer::ID_PERCENT: {
+        size_t pos = result.find(right);
+        if (pos != std::string::npos) {
+          result = result.substr(pos + right.length());
         }
+        break;
+      }
+      default:
+      Error(op, "Unknown operator");
     }
     return result;
+  }
+
+  // Highest level: handles PLUS and MINUS (lowest precedence)
+  std::string ParseExpr(const Token &first) {
+    std::string left = ParseTerm(first);
+    while (lexer.Any() && (lexer.Peek() == Lexer::ID_PLUS || lexer.Peek() == Lexer::ID_MINUS)) {
+      Token op = lexer.Use();
+      if (!lexer.Any()) Error(op, "Expected value after operator");
+      Token next = lexer.Use();
+      std::string right = ParseTerm(next);
+      left = ApplyOperator(op, left, right);
+    }
+    return left;
+  }
+
+  // High-level: handles SLASH and PERCENT
+  std::string ParseTerm(const Token &first) {
+    std::string left = ParsePrimary(first);
+
+    while (lexer.Any() && (lexer.Peek() == Lexer::ID_SLASH || lexer.Peek() == Lexer::ID_PERCENT)) {
+      Token op = lexer.Use();
+      if (!lexer.Any()) Error(op, "Expected value after operator");
+      Token next = lexer.Use();
+      std::string right = ParsePrimary(next);
+      left = ApplyOperator(op, left, right);
+    }
+    return left;
+  }
+
+  // Base-level: just handles a literal or variable
+  std::string ParsePrimary(const Token &token) {
+    if (token == Lexer::ID_ID || token == Lexer::ID_LIT_STRING) {
+        return TokenToString(token);
+    }
+    Error(token, "Expected string literal or variable");
+    return "";
+  }
+
+  std::string CompleteCalculation(const Token & token) {
+    Token current = token;
+    return ParseExpr(token);
   }
 
   bool ParseExpression(const Token & token) {
