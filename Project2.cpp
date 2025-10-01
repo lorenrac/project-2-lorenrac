@@ -280,6 +280,10 @@ public:
         ProcessVAR(token);  
         break;
       }
+      case Lexer::ID_ID: {
+        ProcessID(token);
+        break;
+      }
 
       case Lexer::ID_LBRACE: break;
       case Lexer::ID_RBRACE: break;
@@ -519,6 +523,43 @@ public:
     }
 
     symbol_table[var_name] = result;
+  }
+
+  void ProcessID(const Token & token) {
+    // check if id is in the symbol_table
+    // if not, throw an error
+    std::string name = token.lexeme;
+    if (symbol_table.find(name) == symbol_table.end()) {
+      Error(token, "Assignment to undeclared variable '", name, "'");
+    }
+
+    if (!lexer.Any() || lexer.Peek() != Lexer::ID_ASSIGN) {
+      Error(token, "Expected '=' after variable name");
+    }
+    lexer.Use();
+
+    // if it is:
+      // check if it is a simple x = y, or a more complex expression(like in CompleteCalculation)
+      // handle reassignment accordingly
+    if (!lexer.Any()) {
+      Error(token, "Expected expression after '='");
+    }
+    Token first = lexer.Use();
+    std::string value;
+    if (first == Lexer::ID_ID || first == Lexer::ID_LIT_STRING) {
+      if (lexer.Any() && (
+        lexer.Peek() == Lexer::ID_PLUS || lexer.Peek() == Lexer::ID_MINUS ||
+        lexer.Peek() == Lexer::ID_SLASH || lexer.Peek() == Lexer::ID_PERCENT)) {
+
+        value = CompleteCalculation(first);
+      } else {
+        value = TokenToString(first);
+      }
+    } else {
+      Error(first, "Expected identifier or string literal after '='");
+    }
+
+    symbol_table[name] = value;
   }
 };
 
