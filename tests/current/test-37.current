@@ -1,1 +1,1 @@
-ERROR (line 4): Variable 'test' already declared in this scope
+ERROR (line 4): Redeclaration of variable 'test' (originally defined on line 2)

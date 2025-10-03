@@ -1,1 +1,1 @@
-ERROR (line 2): Expected identifer after VAR
+ERROR (line 2): Expected token of type ID, but found type LIT_STRING

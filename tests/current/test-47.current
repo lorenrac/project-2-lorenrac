@@ -1,1 +1,1 @@
-ERROR (line 3): Expected '{' after WHILE condition
+ERROR (line 3): Unexpected token 'ID'

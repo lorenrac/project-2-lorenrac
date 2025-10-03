@@ -1,1 +1,1 @@
-ERROR (line 2): Expected ')' after IF
+ERROR (line 2): Cannot chain non-associative operators.

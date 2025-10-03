@@ -23,6 +23,8 @@ private:
   std::vector<std::string> stack;
   //std::unordered_map<std::string, std::string> symbol_table;
   std::vector<std::unordered_map<std::string, std::string>> symbol_stack;
+  std::unordered_map<std::string, int> symbolDeclarationLines;
+
 
 
   bool lastIfCondition = false;
@@ -104,6 +106,38 @@ private:
     return "";
   }
 
+  std::string TokenIDToString (const Token & token) {
+    switch (token) {
+      case (Lexer::ID_IF): {return "IF";}
+      case (Lexer::ID_ELSE): {return "ELSE";}
+      case (Lexer::ID_WHILE): {return "WHILE";}
+      case (Lexer::ID_VAR): {return "VAR";}
+      case (Lexer::ID_PRINT): {return "PRINT";}
+      case (Lexer::ID_EQ): {return "EQ";}
+      case (Lexer::ID_NEQ): {return "NEQ";}
+      case (Lexer::ID_LE): {return "LE";}
+      case (Lexer::ID_GE): {return "GE";}
+      case (Lexer::ID_LT): {return "LT";}
+      case (Lexer::ID_GT): {return "GT";}
+      case (Lexer::ID_ASSIGN): {return "ASSIGN";}
+      case (Lexer::ID_NOT): {return "NOT";}
+      case (Lexer::ID_QUESTION): {return "QUESTION";}
+      case (Lexer::ID_PLUS): {return "PLUS";}
+      case (Lexer::ID_MINUS): {return "MINUS";}
+      case (Lexer::ID_SLASH): {return "SLASH";}
+      case (Lexer::ID_PERCENT): {return "PERCENT";}
+      case (Lexer::ID_LPAREN): {return "LPAREN";}
+      case (Lexer::ID_RPAREN): {return "RPAREN";}
+      case (Lexer::ID_LBRACE): {return "LBRACE";}
+      case (Lexer::ID_RBRACE): {return "RBRACE";}
+      case (Lexer::ID_ID): {return "ID";}
+      case (Lexer::ID_LIT_STRING): {return "LIT_STRING";}
+      case (Lexer::ID_NEWLINE): {return "NEWLINE";}
+      default:
+        return "";
+    }
+  }
+
   std::string ApplyOperator(const Token &op, const std::string &left, const std::string &right) {
     std::string result = left;
 
@@ -181,13 +215,13 @@ private:
       std::string value = ParseExpr(next);
 
       if (!lexer.Any() || lexer.Peek() != Lexer::ID_RPAREN) {
-        Error(token, "Expected ')' to close parenthesized expression");
+        Error(token, "Missing parenthesis");
       }
       lexer.Use(); // consume ')'
       return value;
     }
 
-    Error(token, "Expected string literal, variable, or parenthesized expression");
+    Error(token, "Unexpected token '", token.lexeme, "'");
     return "";
   }
 
@@ -337,6 +371,9 @@ public:
         ProcessRBRACE(token);
         break;
       }
+      case Lexer::ID_LIT_STRING:
+        Error(token, "Left-hand-side of assignment must be a variable.");
+        break;
       case Lexer::ID_NEWLINE: return; // Empty line -- nothing to process.
       default:
         // If we made it here, this is not a valid line.
@@ -376,6 +413,9 @@ public:
         break;
       case Lexer::ID_ID:
         ProcessID(token);
+        break;
+      case Lexer::ID_LIT_STRING:
+        Error(token, "Left-hand-side of assignment must be a variable.");
         break;
       default:
         UnexpectedToken(token);
@@ -435,8 +475,12 @@ public:
 
   void ProcessIF(const Token & token) {
     // Handle LParen
-    if (!lexer.Any() || lexer.Peek() != Lexer::ID_LPAREN) {
-      Error(token, "Expected '(' after IF");
+    if (!lexer.Any()) {
+      Error(token, "Unexpected Eof");
+    }
+    Token paren = lexer.Peek();
+    if (paren != Lexer::ID_LPAREN) {
+      Error(token, "Expected token of type '(', but found type ", TokenIDToString(paren));
     }
     lexer.Use();
 
@@ -445,7 +489,7 @@ public:
     justProcessedIf = true;
 
     if (!lexer.Any() || lexer.Peek() != Lexer::ID_RPAREN) {
-      Error(token, "Expected ')' after IF");
+      Error(token, "Cannot chain non-associative operators.");
     }
     lexer.Use();
 
@@ -479,7 +523,7 @@ public:
 
       // Make sure we found the closing '}'
       if (!lexer.Any() || lexer.Peek() != Lexer::ID_RBRACE) {
-        Error(token, "Expected '}' to close IF block");
+        Error(token, "Unexpected End-of-File");
       }
       //ProcessRBRACE(lexer.Peek());
       lexer.Use(); // consume '}'
@@ -734,7 +778,7 @@ public:
     k++;
 
     if (k >= tokens.size() || tokens[k].id != Lexer::ID_LPAREN) {
-      Error(token, "Expected '(' after IF");
+      Error(token, "Cannot chain non-associative operators.");
     }
     k++;
 
@@ -774,7 +818,7 @@ public:
         }
 
         if (braceDepth != 0) {
-          Error(token, "Expected '}' to close IF block");
+          Error(token, "Unexpected End-of-File");
         }
 
         size_t execK = stmtStart;
@@ -888,7 +932,9 @@ public:
     // ensure new variable
     auto& current_scope = symbol_stack.back();
     if (current_scope.find(var_name) != current_scope.end()) {
-      Error(var_token, "Variable '", var_name, "' already declared in this scope");
+      int originalLine = symbolDeclarationLines.count(var_name) ? symbolDeclarationLines[var_name] : -1;
+      std::string lineStr = (originalLine != -1) ? std::to_string(originalLine) : "?";
+      Error(var_token, "Redeclaration of variable '", var_name, "' (originally defined on line ", lineStr, ")");
     }
 
     if (k >= tokens.size() || tokens[k].id != Lexer::ID_ASSIGN) {
@@ -938,6 +984,7 @@ public:
 
         if (current.id == Lexer::ID_ID) {
           current_scope[current.lexeme] = result;
+          symbolDeclarationLines[current.lexeme] = current.line_id;
         }
       } else {
         Error(next2, "Expected string literal or variable after '='");
@@ -945,6 +992,7 @@ public:
     }
 
     current_scope[var_name] = result;
+    symbolDeclarationLines[var_name] = var_token.line_id;
 
     return k;
   }
@@ -1172,13 +1220,13 @@ public:
       std::string value = ParseExprFromVector(tokens, index);
 
       if (index >= tokens.size() || tokens[index] != Lexer::ID_RPAREN) {
-        Error(token, "Expected ')' to close parenthesized expression");
+        Error(token, "Missing parenthesis");
       }
       index++;
       return value;
     }
 
-    Error(token, "Expected string literal, variable, or parenthesized expression");
+    Error(token, "Unexpected token '", token.lexeme, "'");
     return "";
   }
 
@@ -1203,8 +1251,12 @@ public:
     }
 
     // Check for '{'
-    if (!lexer.Any() || lexer.Peek() != Lexer::ID_LBRACE) {
-      Error(token, "Expected '{' after WHILE condition");
+    if (!lexer.Any()) {
+      Error(token, "Unexpected eof");
+    }
+    Token brace = lexer.Peek();
+    if (brace != Lexer::ID_LBRACE) {
+      Error(brace, "Unexpected token '", TokenIDToString(brace),"'");
     }
     lexer.Use();
 
@@ -1252,8 +1304,12 @@ public:
 
 
   void ProcessVAR(const Token & token) {
-    if (!lexer.Any() || lexer.Peek() != Lexer::ID_ID) {
-      Error(token, "Expected identifer after VAR");
+    if (!lexer.Any()) {
+      Error(token, "Expected token of type ID, but found end of input");
+    }
+    Token found = lexer.Peek();
+    if (found.id != Lexer::ID_ID) {
+      Error(found, "Expected token of type ID, but found type ", TokenIDToString(found));
     }
     Token var_token = lexer.Use();
     Token next = var_token;
@@ -1264,12 +1320,15 @@ public:
     // check redeclaration
     auto &current_scope = symbol_stack.back();
     if (current_scope.find(var_name) != current_scope.end()) {
-      Error(var_token, "Variable '", var_name, "' already declared in this scope");
+      int originalLine = symbolDeclarationLines.count(var_name) ? symbolDeclarationLines[var_name] : -1;
+      std::string lineStr = (originalLine != -1) ? std::to_string(originalLine) : "?";
+      Error(var_token, "Redeclaration of variable '", var_name, "' (originally defined on line ", lineStr, ")");
     }
 
     // consume '=' operator
-    if (!lexer.Any() || lexer.Peek() != Lexer::ID_ASSIGN) {
-      Error(var_token, "Expected '=' after variable name");
+    Token equals = lexer.Peek();
+    if (found.id != Lexer::ID_ID) {
+      Error(found, "Expected token of type ASSIGN, but found type ", TokenIDToString(equals));
     }
     next = lexer.Use();
 
@@ -1312,12 +1371,14 @@ public:
         //var_token, middle, next2
         if (middle == Lexer::ID_ID) {
           current_scope[middle.lexeme] = TokenToString(next2);
+          symbolDeclarationLines[middle.lexeme] = middle.line_id;
           result = TokenToString(next2);
         }
       }
     }
 
     current_scope[var_name] = result;
+    symbolDeclarationLines[var_name] = var_token.line_id;
   }
 
   void ProcessID(const Token & token) {
