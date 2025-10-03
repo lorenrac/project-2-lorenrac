@@ -168,28 +168,28 @@ private:
 
   // Base-level: just handles a literal or variable
   std::string ParsePrimary(const Token &token) {
-  if (token == Lexer::ID_ID || token == Lexer::ID_LIT_STRING) {
-    return TokenToString(token);
-  }
-
-  if (token == Lexer::ID_LPAREN) {
-    if (!lexer.Any()) {
-      Error(token, "Expected expression after '('");
+    if (token == Lexer::ID_ID || token == Lexer::ID_LIT_STRING) {
+      return TokenToString(token);
     }
 
-    Token next = lexer.Use();
-    std::string value = ParseExpr(next);
+    if (token == Lexer::ID_LPAREN) {
+      if (!lexer.Any()) {
+        Error(token, "Expected expression after '('");
+      }
 
-    if (!lexer.Any() || lexer.Peek() != Lexer::ID_RPAREN) {
-      Error(token, "Expected ')' to close parenthesized expression");
+      Token next = lexer.Use();
+      std::string value = ParseExpr(next);
+
+      if (!lexer.Any() || lexer.Peek() != Lexer::ID_RPAREN) {
+        Error(token, "Expected ')' to close parenthesized expression");
+      }
+      lexer.Use(); // consume ')'
+      return value;
     }
-    lexer.Use(); // consume ')'
-    return value;
-  }
 
-  Error(token, "Expected string literal, variable, or parenthesized expression");
-  return "";
-}
+    Error(token, "Expected string literal, variable, or parenthesized expression");
+    return "";
+  }
 
 
   std::string CompleteCalculation(const Token & token) {
@@ -260,24 +260,24 @@ private:
       valid = !leftValue.empty();
     } 
     else {
-    // Compare leftValue and rightValue based on operator
-    if (op == Lexer::ID_EQ)        valid = (leftValue == rightValue);
-    else if (op == Lexer::ID_NEQ)  valid = (leftValue != rightValue);
-    else if (op == Lexer::ID_LT)   valid = (leftValue < rightValue);
-    else if (op == Lexer::ID_LE)   valid = (leftValue <= rightValue);
-    else if (op == Lexer::ID_GT)   valid = (leftValue > rightValue);
-    else if (op == Lexer::ID_GE)   valid = (leftValue >= rightValue);
-    else if (op == Lexer::ID_QUESTION) {
-      valid = (leftValue.find(rightValue) != std::string::npos);
+      // Compare leftValue and rightValue based on operator
+      if (op == Lexer::ID_EQ)        valid = (leftValue == rightValue);
+      else if (op == Lexer::ID_NEQ)  valid = (leftValue != rightValue);
+      else if (op == Lexer::ID_LT)   valid = (leftValue < rightValue);
+      else if (op == Lexer::ID_LE)   valid = (leftValue <= rightValue);
+      else if (op == Lexer::ID_GT)   valid = (leftValue > rightValue);
+      else if (op == Lexer::ID_GE)   valid = (leftValue >= rightValue);
+      else if (op == Lexer::ID_QUESTION) {
+        valid = (leftValue.find(rightValue) != std::string::npos);
+      }
+      else Error(op, "Unknown operator in expression");
     }
-    else Error(op, "Unknown operator in expression");
-  }
 
-  if (notPresent) {
-    valid = !valid;
+    if (notPresent) {
+      valid = !valid;
+    }
+    return valid;
   }
-  return valid;
-}
 
 
 public:
@@ -556,12 +556,708 @@ public:
     }
   }
 
+  bool ParseWHILEExpression(const std::vector<Token>& expression) {
+    bool valid = false;
+    bool notPresent = false;
+    bool rightSide = false;
+    std::string leftValue;
+    std::string rightValue;
+    Token op;
+
+    size_t index = 0;
+    auto next = [&]() -> Token {
+      if (index >= expression.size()) {
+          Error(expression.back(), "Unexpected end of expression");
+      }
+      return expression[index++];
+    };
+
+    auto peek = [&]() -> Token {
+      if (index >= expression.size()) {
+          Error(expression.back(), "Unexpected end of expression");
+      }
+      return expression[index];
+    };
+
+    Token current = next();
+    if (current == Lexer::ID_NOT) {
+      notPresent = true;
+      if (index >= expression.size()) {
+          Error(current, "Expected expression after NOT");
+      }
+      current = next();
+    }
+
+    if (current == Lexer::ID_ID || current == Lexer::ID_LIT_STRING) {
+      if (current == Lexer::ID_ID) {
+        std::string name = current.lexeme;
+        bool leftFound = false;
+        for (auto scope_it = symbol_stack.rbegin(); scope_it != symbol_stack.rend(); ++scope_it) {
+          auto it = scope_it->find(name);
+          if (it != scope_it->end()) {
+            leftValue = scope_it->find(name)->second;
+            leftFound = true;
+            break;
+          }
+        }
+        if (!leftFound) Error(current, "Undefined variable '", name, "'");
+      }else {
+        leftValue = TokenToString(current);
+      }
+
+      if (index < expression.size()) {
+        rightSide = true;
+        Token possible_op = next();
+
+        switch (possible_op.id) {
+          case Lexer::ID_EQ:
+          case Lexer::ID_NEQ:
+          case Lexer::ID_LE:
+          case Lexer::ID_GE:
+          case Lexer::ID_LT:
+          case Lexer::ID_GT:
+          case Lexer::ID_QUESTION:
+            op = possible_op;
+              break;
+            default:
+              Error(possible_op, "Expected comparison operator, got '", possible_op.lexeme, "'");
+        }
+        if (index >= expression.size()) {
+            Error(op, "Expected right-hand expression after operator");
+        }
+
+        Token right = next();
+        if (right == Lexer::ID_ID || right == Lexer::ID_LIT_STRING) {
+          if (right == Lexer::ID_ID) {
+          std::string name = right.lexeme;
+          bool rightFound = false;
+          for (auto scope_it = symbol_stack.rbegin(); scope_it != symbol_stack.rend(); ++scope_it) {
+            auto it = scope_it->find(name);
+            if (it != scope_it->end()) {
+            rightValue = scope_it->find(name)->second;
+            rightFound = true;
+            break;
+            }
+          }
+          if (!rightFound) Error(right, "Undefined variable '", name, "'");
+        }else {
+          rightValue = TokenToString(right);
+        }
+        } else {
+          Error(right, "Expected identifier or string literal after operator");
+        }
+      }
+    } else {
+      Error(current, "Expected identifier or string literal in expression");
+    }
+
+    if (!rightSide) {
+      if (leftValue == "") {
+        valid = false;
+      }
+      else {
+        valid = true;
+      }
+    } else {
+      if (op == Lexer::ID_EQ)         valid = (leftValue == rightValue);
+      else if (op == Lexer::ID_NEQ)   valid = (leftValue != rightValue);
+      else if (op == Lexer::ID_LT)    valid = (leftValue < rightValue);
+      else if (op == Lexer::ID_LE)    valid = (leftValue <= rightValue);
+      else if (op == Lexer::ID_GT)    valid = (leftValue > rightValue);
+      else if (op == Lexer::ID_GE)    valid = (leftValue >= rightValue);
+      else if (op == Lexer::ID_QUESTION) valid = (leftValue.find(rightValue) != std::string::npos);
+      else Error(op, "Unknown operator in expression");
+    }
+
+    if (notPresent) {
+      valid = !valid;
+    }
+
+    return valid;
+  }
+
+  int ProcessPRINTFromVector(const std::vector<Token>& tokens, int k) {
+    bool reverse = false;
+    std::string out;
+
+    const Token& token = tokens[k];
+    k++;
+
+    if (k >= tokens.size()) {
+      out = StackPop(token);
+    } else {
+      Token next = tokens[k];
+
+      if (next.id == Lexer::ID_NOT) {
+        reverse = true;
+        k++;
+        if (k >= tokens.size()) Error(token, "Expected expression after NOT in PRINT");
+      }
+      if (tokens[k].id == Lexer::ID_LPAREN) {
+        int parenDepth = 1;
+        int start = k + 1;
+        int end = start;
+
+        while (end < tokens.size() && parenDepth > 0) {
+            if (tokens[end].id == Lexer::ID_LPAREN) parenDepth++;
+            else if (tokens[end].id == Lexer::ID_RPAREN) parenDepth--;
+            end++;
+        }
+        if (parenDepth != 0) {
+          Error(tokens[k], "Unmatched parentheses in PRINT expression");
+        }
+
+        std::vector<Token> subExpr(tokens.begin() + start, tokens.begin() + end - 1);
+        if (subExpr.size() >= 3 &&
+          (subExpr[1].id == Lexer::ID_EQ || subExpr[1].id == Lexer::ID_NEQ ||
+            subExpr[1].id == Lexer::ID_LE || subExpr[1].id == Lexer::ID_GE ||
+            subExpr[1].id == Lexer::ID_LT || subExpr[1].id == Lexer::ID_GT ||
+            subExpr[1].id == Lexer::ID_QUESTION)) {
+          bool result = ParseWHILEExpression(subExpr);
+          out = result ? "1" : "";
+        } else {
+          int dummy = 0;
+          out = CompleteCalculationFromVector(subExpr, 0, &dummy);
+        }
+        k = end;
+      }
+      else {
+        out = CompleteCalculationFromVector(tokens, k, &k);
+      }
+    }
+
+    if (reverse && out.empty()) {
+      out = "1";
+    }
+
+    std::cout << out << std::endl;
+    return k;
+  }
+
+
+
+  int ProcessIFFromVector(const std::vector<Token>& tokens, int k) {
+    const Token& token = tokens[k];
+    k++;
+
+    if (k >= tokens.size() || tokens[k].id != Lexer::ID_LPAREN) {
+      Error(token, "Expected '(' after IF");
+    }
+    k++;
+
+    int parenDepth = 1;
+    int exprStart = k;
+    int exprEnd = k;
+
+    while (exprEnd < tokens.size() && parenDepth > 0) {
+      if (tokens[exprEnd].id == Lexer::ID_LPAREN) parenDepth++;
+      else if (tokens[exprEnd].id == Lexer::ID_RPAREN) parenDepth--;
+      exprEnd++;
+    }
+
+    if (parenDepth != 0) {
+      Error(token, "Unclosed '(' in IF condition");
+    }
+
+    // Check condition
+    std::vector<Token> conditionExpr(tokens.begin() + exprStart, tokens.begin() + exprEnd - 1);
+    bool condition = ParseWHILEExpression(conditionExpr);
+    lastIfCondition = condition;
+    justProcessedIf = true;
+
+    k = exprEnd;
+
+    if (k < tokens.size() && tokens[k].id == Lexer::ID_LBRACE) {
+      k++;
+
+      if (condition) {
+        // IF block
+        int braceDepth = 1;
+        int stmtStart = k;
+        while (k < tokens.size() && braceDepth > 0) {
+          if (tokens[k].id == Lexer::ID_LBRACE) braceDepth++;
+          else if (tokens[k].id == Lexer::ID_RBRACE) braceDepth--;
+          if (braceDepth > 0) k++;
+        }
+
+        if (braceDepth != 0) {
+          Error(token, "Expected '}' to close IF block");
+        }
+
+        int execK = stmtStart;
+        while (execK < k) {
+          execK = ProcessLineFromVector(tokens, execK);
+        }
+
+          k++;
+      } else {
+        // Skip IF block
+        int braceDepth = 1;
+        while (k < tokens.size() && braceDepth > 0) {
+          if (tokens[k].id == Lexer::ID_LBRACE) braceDepth++;
+          else if (tokens[k].id == Lexer::ID_RBRACE) braceDepth--;
+          k++;
+        }
+
+        if (braceDepth != 0) {
+          Error(token, "Expected '}' to close skipped IF block");
+        }
+      }
+    } else {
+      // Single-line IF
+      if (condition) {
+        k = ProcessLineFromVector(tokens, k);
+      } else {
+        // Skip Single-line IF
+        while (k < tokens.size() && tokens[k].id != Lexer::ID_NEWLINE &&
+          tokens[k].id != Lexer::ID_RBRACE) {
+          k++;
+        }
+      }
+    }
+    return k;
+  }
+
+  int ProcessELSEFromVector(const std::vector<Token>& tokens, int k) {
+    const Token& token = tokens[k];
+
+    if (!justProcessedIf) {
+      Error(token, "ELSE without matching IF");
+    }
+    justProcessedIf = false;
+
+    k++;
+
+    if (k < tokens.size() && tokens[k].id == Lexer::ID_LBRACE) {
+      k++;
+
+      if (!lastIfCondition) {
+        // ELSE block
+        int braceDepth = 1;
+        int stmtStart = k;
+        while (k < tokens.size() && braceDepth > 0) {
+          if (tokens[k].id == Lexer::ID_LBRACE) braceDepth++;
+          else if (tokens[k].id == Lexer::ID_RBRACE) braceDepth--;
+
+          if (braceDepth > 0) k++;
+        }
+
+        if (braceDepth != 0) {
+          Error(token, "Expected '}' to close ELSE block");
+        }
+
+        int execK = stmtStart;
+        while (execK < k) {
+          execK = ProcessLineFromVector(tokens, execK);
+        }
+
+        k++;
+      } else {
+        // Skip ELSE block
+        int braceDepth = 1;
+        while (k < tokens.size() && braceDepth > 0) {
+          if (tokens[k].id == Lexer::ID_LBRACE) braceDepth++;
+          else if (tokens[k].id == Lexer::ID_RBRACE) braceDepth--;
+          k++;
+        }
+
+        if (braceDepth != 0) {
+          Error(token, "Expected '}' to close ELSE block");
+        }
+      }
+    } else {
+      // Single-line ELSE
+      if (!lastIfCondition) {
+        k = ProcessLineFromVector(tokens, k);
+      } else {
+        // Skip single-line else
+        while (k < tokens.size() &&
+          tokens[k].id != Lexer::ID_NEWLINE &&
+          tokens[k].id != Lexer::ID_RBRACE) {
+          k++;
+        }
+      }
+    }
+    return k;
+  }
+
+  int ProcessVARFromVector(const std::vector<Token>& tokens, int k) {
+    const Token& token = tokens[k];
+    k++;
+
+    if (k >= tokens.size() || tokens[k].id != Lexer::ID_ID) {
+      Error(token, "Expected identifier after VAR");
+    }
+
+    Token var_token = tokens[k++];
+    std::string var_name = var_token.lexeme;
+
+    // ensure new variable
+    auto& current_scope = symbol_stack.back();
+    if (current_scope.find(var_name) != current_scope.end()) {
+      Error(var_token, "Variable '", var_name, "' already declared in this scope");
+    }
+
+    if (k >= tokens.size() || tokens[k].id != Lexer::ID_ASSIGN) {
+      Error(var_token, "Expected '=' after variable name");
+    }
+    k++;
+
+    if (k >= tokens.size()) {
+      Error(var_token, "Expected expression after '='");
+    }
+
+    std::string result;
+    Token current = tokens[k];
+    if (current.id == Lexer::ID_ID || current.id == Lexer::ID_LIT_STRING) {
+      result = TokenToString(current);
+      k++;
+    } else {
+      Error(current, "Expected string literal or variable in expression");
+    }
+
+    while (k < tokens.size() && tokens[k].id == Lexer::ID_PLUS) {
+      k++;
+
+      if (k >= tokens.size()) {
+        Error(current, "Expected value after '+'");
+      }
+
+      Token next = tokens[k++];
+      if (next.id == Lexer::ID_ID || next.id == Lexer::ID_LIT_STRING) {
+        result += TokenToString(next);
+      } else {
+        Error(next, "Expected string literal or variable after '+'");
+      }
+    }
+
+    // Chains
+    if (k < tokens.size() && tokens[k].id == Lexer::ID_ASSIGN) {
+      k++;
+
+      if (k >= tokens.size()) {
+        Error(current, "Expected value after '='");
+      }
+
+      Token next2 = tokens[k++];
+      if (next2.id == Lexer::ID_ID || next2.id == Lexer::ID_LIT_STRING) {
+        result = TokenToString(next2);
+
+        if (current.id == Lexer::ID_ID) {
+          current_scope[current.lexeme] = result;
+        }
+      } else {
+        Error(next2, "Expected string literal or variable after '='");
+      }
+    }
+
+    current_scope[var_name] = result;
+
+    return k;
+  }
+
+  int ProcessIDFromVector(const std::vector<Token>& tokens, int k) {
+    if (k >= tokens.size()) {
+      Error(Token{}, "Unexpected end of tokens in ProcessIDFromVector");
+    }
+
+    const Token& token = tokens[k++];
+    std::string name = token.lexeme;
+
+    // Ensure variable already exists
+    bool found = false;
+    for (auto scope_it = symbol_stack.rbegin(); scope_it != symbol_stack.rend(); ++scope_it) {
+      if (scope_it->find(name) != scope_it->end()) {
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      Error(token, "Assignment to undeclared variable '", name, "'");
+    }
+
+    if (k >= tokens.size() || tokens[k].id != Lexer::ID_ASSIGN) {
+      Error(token, "Expected '=' after variable name");
+    }
+    k++;
+
+    if (k >= tokens.size()) {
+      Error(token, "Expected expression after '='");
+    }
+
+    bool reverse = false;
+    Token first = tokens[k];
+
+    if (first.id == Lexer::ID_NOT) {
+      reverse = true;
+      k++;
+      if (k >= tokens.size()) {
+        Error(token, "Expected expression after '!'");
+      }
+      first = tokens[k];
+    }
+
+    std::string value;
+
+    if (first.id == Lexer::ID_ID || first.id == Lexer::ID_LIT_STRING || first.id == Lexer::ID_LPAREN) {
+      std::vector<Token> exprTokens;
+      int exprStart = k;
+      int depth = 0;
+
+      while (k < tokens.size()) {
+        Token t = tokens[k];
+        if (t.id == Lexer::ID_LPAREN) depth++;
+        else if (t.id == Lexer::ID_RPAREN) {
+          if (depth == 0) break;
+          depth--;
+        } else if (depth == 0 && t.id == Lexer::ID_NEWLINE) break;
+        exprTokens.push_back(t);
+        k++;
+      }
+      int dummyIndex = 0;
+      value = CompleteCalculationFromVector(exprTokens, dummyIndex);
+    } else {
+        Error(first, "Expected identifier, string literal, or expression after '='");
+    }
+
+    if (reverse) {
+      value = (value.empty()) ? "1" : "";
+    }
+
+    // Reassign variable
+    for (auto scope_it = symbol_stack.rbegin(); scope_it != symbol_stack.rend(); ++scope_it) {
+      if (scope_it->find(name) != scope_it->end()) {
+        (*scope_it)[name] = value;
+        break;
+      }
+    }
+    return k;
+  }
+
+
+  int ProcessLineFromVector(const std::vector<Token>& tokens, int k) {
+    if (k >= tokens.size()) {
+      Error(Token{}, "Unexpected end of tokens in ProcessLineFromVector");
+    }
+    const Token& token = tokens[k++];
+    switch (token.id) {
+      case Lexer::ID_PRINT:
+        k = ProcessPRINTFromVector(tokens, k);
+        break;
+      case Lexer::ID_IF:
+        k = ProcessIFFromVector(tokens, k);
+        break;
+      case Lexer::ID_ELSE:
+        k = ProcessELSEFromVector(tokens, k);
+        break;
+      case Lexer::ID_WHILE:
+        break;
+      case Lexer::ID_VAR:
+        k = ProcessVARFromVector(tokens, k);
+        break;
+      case Lexer::ID_ID:
+        k = ProcessIDFromVector(tokens, k);
+        break;
+      case Lexer::ID_LBRACE:
+        break;
+      case Lexer::ID_RBRACE:
+        break;
+      case Lexer::ID_NEWLINE:
+        return k;
+        break;
+      default:
+        Error(token, "Unknown command '", token.lexeme, "'");
+    }
+    if (k < tokens.size()) {
+      if (tokens[k].id == Lexer::ID_NEWLINE) {
+        k++;
+      } else {
+        UnexpectedToken(tokens[k]);
+      }
+    }
+    return k;
+  }
+
+  std::string CompleteCalculationFromVector(const std::vector<Token>& tokens, int k, int* outIndex = nullptr) {
+    if (k >= tokens.size()) {
+      Error(Token{}, "Expected expression but reached end of tokens");
+    }
+
+    std::vector<Token> expressionTokens;
+    int depth = 0;
+
+    while (k < tokens.size()) {
+      const Token& t = tokens[k];
+
+      if (t.id == Lexer::ID_LPAREN) {
+        depth++;
+      } else if (t.id == Lexer::ID_RPAREN) {
+        if (depth == 0) break;
+        depth--;
+      } else if (depth == 0 && t.id == Lexer::ID_NEWLINE) {
+        break;
+      }
+      expressionTokens.push_back(t);
+      k++;
+    }
+
+    if (expressionTokens.empty()) {
+      Error(tokens[k], "Expected expression for calculation");
+    }
+
+    int exprIndex = 0;
+    std::string result = ParseExprFromVector(expressionTokens, exprIndex);
+
+    if (outIndex) {
+      *outIndex = k;
+    }
+
+    return result;
+  }
+
+
+  std::string ParseExprFromVector(const std::vector<Token>& tokens, int& index) {
+    if (index >= tokens.size()) {
+      Error(Token{}, "Expected expression but reached end of tokens");
+    }
+
+    std::string left = ParseTermFromVector(tokens, index);
+
+    while (index < tokens.size() && 
+      (tokens[index].id == Lexer::ID_PLUS || tokens[index].id == Lexer::ID_MINUS)) {
+        
+      Token op = tokens[index];
+      index++;
+
+      if (index >= tokens.size()) {
+        Error(op, "Expected value after operator");
+      }
+
+      std::string right = ParseTermFromVector(tokens, index);
+      left = ApplyOperator(op, left, right);
+    }
+    return left;
+  }
+
+  std::string ParseTermFromVector(const std::vector<Token> &tokens, int &index) {
+    if (index >= tokens.size()) {
+      Error(Token{}, "Expected term but reached end of tokens");
+    }
+
+    std::string left = ParsePrimaryFromVector(tokens, index);
+
+    while (index < tokens.size() && (tokens[index].id == Lexer::ID_SLASH || tokens[index].id == Lexer::ID_PERCENT)) {
+      Token op = tokens[index];
+      index++;  // consume operator
+
+      if (index >= tokens.size()) {
+        Error(op, "Expected value after operator");
+      }
+
+      std::string right = ParsePrimaryFromVector(tokens, index);
+      left = ApplyOperator(op, left, right);
+    }
+    return left;
+  }
+
+  std::string ParsePrimaryFromVector(const std::vector<Token> &tokens, int &index) {
+    if (index >= tokens.size()) {
+      Error(Token{}, "Expected expression but reached end of tokens");
+    }
+
+    Token token = tokens[index];
+    index++;
+
+    if (token == Lexer::ID_ID || token == Lexer::ID_LIT_STRING) {
+      return TokenToString(token);
+    }
+
+    if (token == Lexer::ID_LPAREN) {
+      if (index >= tokens.size()) {
+        Error(token, "Expected expression after '('");
+      }
+
+      std::string value = ParseExprFromVector(tokens, index);
+
+      if (index >= tokens.size() || tokens[index] != Lexer::ID_RPAREN) {
+        Error(token, "Expected ')' to close parenthesized expression");
+      }
+      index++;
+      return value;
+    }
+
+    Error(token, "Expected string literal, variable, or parenthesized expression");
+    return "";
+  }
+
+
   void ProcessWHILE(const Token & token) {
-    // TODO
-    if (token) {
-      return;
+    // Check for '('
+    if (!lexer.Any() || lexer.Peek() != Lexer::ID_LPAREN) {
+      Error(token, "Expected '(' after WHILE");
+    }
+    lexer.Use();
+
+    // create condition vector
+    std::vector<Token> cond;
+    int depth = 1;
+    while (lexer.Any() && depth > 0) {
+      Token t = lexer.Use();
+      if (t.id == Lexer::ID_LPAREN) depth++;
+      else if (t.id == Lexer::ID_RPAREN) depth--;
+      if (depth > 0) {
+        cond.push_back(t);
+      }
+    }
+
+    // Check for '{'
+    if (!lexer.Any() || lexer.Peek() != Lexer::ID_LBRACE) {
+      Error(token, "Expected '{' after WHILE condition");
+    }
+    lexer.Use();
+
+    // create body vector
+    std::vector<Token> body;
+    int brace_depth = 1;
+    while (lexer.Any() && brace_depth > 0) {
+      Token t = lexer.Use();
+      if (t.id == Lexer::ID_LBRACE) brace_depth++;
+      else if (t.id == Lexer::ID_RBRACE) brace_depth--;
+      if (brace_depth > 0) {
+        body.push_back(t);
+      }
+    }
+
+    while (ParseWHILEExpression(cond)) {
+      int k = 0;
+      while (k < body.size()) {
+        Token current = body[k];
+        switch (current.id) {
+          case Lexer::ID_PRINT:
+            k = ProcessPRINTFromVector(body, k);
+            break;
+          case Lexer::ID_VAR:
+            k = ProcessVARFromVector(body, k);
+            break;
+          case Lexer::ID_ID:
+            k = ProcessIDFromVector(body, k);
+            break;
+          case Lexer::ID_IF:
+            k = ProcessIFFromVector(body, k);
+            break;
+          case Lexer::ID_ELSE:
+            k = ProcessELSEFromVector(body, k);
+            break;
+          case Lexer::ID_NEWLINE:
+            k++;
+            break;
+          default:
+            Error(current, "Unknown command '", current.lexeme, "'");
+        }
+      }
     }
   }
+
 
   void ProcessVAR(const Token & token) {
     if (!lexer.Any() || lexer.Peek() != Lexer::ID_ID) {
@@ -677,16 +1373,6 @@ public:
         value = CompleteCalculation(first);
       } else {
         value = TokenToString(first);
-        /*lexer.Use();
-        if (lexer.Any() && lexer.Peek() == Lexer::ID_ASSIGN){
-          lexer.Use();
-          if (lexer.Any() && lexer.Peek() == Lexer::ID_ID) {
-            Token chain = lexer.Use();
-            std::string chainName = chain.lexeme;
-            std::string chainValue = value;
-            symbol_table[chainName] = chainValue;
-          }
-        }*/
       }
     } else {
       Error(first, "Expected identifier or string literal after '='");
