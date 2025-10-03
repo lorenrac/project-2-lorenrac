@@ -197,7 +197,7 @@ private:
     return ParseExpr(token);
   }
 
-  bool ParseExpression(const Token & token) {
+  bool ParseExpression() {
     bool valid = false;
     bool notPresent = false;
     bool rightSide = false;
@@ -408,7 +408,7 @@ public:
 
         // Is it a boolean expression?
         if ((lookahead == Lexer::ID_ID || lookahead == Lexer::ID_LIT_STRING) && (lookahead2 == Lexer::ID_EQ || lookahead2 == Lexer::ID_NEQ || lookahead2 == Lexer::ID_LE || lookahead2 == Lexer::ID_GE || lookahead2 == Lexer::ID_LT || lookahead2 == Lexer::ID_GT || lookahead2 == Lexer::ID_QUESTION)) {
-          bool result = ParseExpression(first);
+          bool result = ParseExpression();
 
           // Check for RPAREN
           if (!lexer.Any() || lexer.Peek() != Lexer::ID_RPAREN) {
@@ -440,7 +440,7 @@ public:
     }
     lexer.Use();
 
-    bool condition = ParseExpression(token);
+    bool condition = ParseExpression();
     lastIfCondition = condition;
     justProcessedIf = true;
 
@@ -572,13 +572,6 @@ public:
       return expression[index++];
     };
 
-    auto peek = [&]() -> Token {
-      if (index >= expression.size()) {
-          Error(expression.back(), "Unexpected end of expression");
-      }
-      return expression[index];
-    };
-
     Token current = next();
     if (current == Lexer::ID_NOT) {
       notPresent = true;
@@ -676,7 +669,7 @@ public:
     return valid;
   }
 
-  int ProcessPRINTFromVector(const std::vector<Token>& tokens, int k) {
+  int ProcessPRINTFromVector(const std::vector<Token>& tokens, size_t k) {
     bool reverse = false;
     std::string out;
 
@@ -696,7 +689,7 @@ public:
       if (tokens[k].id == Lexer::ID_LPAREN) {
         int parenDepth = 1;
         int start = k + 1;
-        int end = start;
+        size_t end = start;
 
         while (end < tokens.size() && parenDepth > 0) {
             if (tokens[end].id == Lexer::ID_LPAREN) parenDepth++;
@@ -716,7 +709,7 @@ public:
           bool result = ParseWHILEExpression(subExpr);
           out = result ? "1" : "";
         } else {
-          int dummy = 0;
+          size_t dummy = 0;
           out = CompleteCalculationFromVector(subExpr, 0, &dummy);
         }
         k = end;
@@ -736,7 +729,7 @@ public:
 
 
 
-  int ProcessIFFromVector(const std::vector<Token>& tokens, int k) {
+  int ProcessIFFromVector(const std::vector<Token>& tokens, size_t k) {
     const Token& token = tokens[k];
     k++;
 
@@ -747,7 +740,7 @@ public:
 
     int parenDepth = 1;
     int exprStart = k;
-    int exprEnd = k;
+    size_t exprEnd = k;
 
     while (exprEnd < tokens.size() && parenDepth > 0) {
       if (tokens[exprEnd].id == Lexer::ID_LPAREN) parenDepth++;
@@ -784,7 +777,7 @@ public:
           Error(token, "Expected '}' to close IF block");
         }
 
-        int execK = stmtStart;
+        size_t execK = stmtStart;
         while (execK < k) {
           execK = ProcessLineFromVector(tokens, execK);
         }
@@ -818,7 +811,7 @@ public:
     return k;
   }
 
-  int ProcessELSEFromVector(const std::vector<Token>& tokens, int k) {
+  int ProcessELSEFromVector(const std::vector<Token>& tokens, size_t k) {
     const Token& token = tokens[k];
 
     if (!justProcessedIf) {
@@ -846,7 +839,7 @@ public:
           Error(token, "Expected '}' to close ELSE block");
         }
 
-        int execK = stmtStart;
+        size_t execK = stmtStart;
         while (execK < k) {
           execK = ProcessLineFromVector(tokens, execK);
         }
@@ -881,7 +874,7 @@ public:
     return k;
   }
 
-  int ProcessVARFromVector(const std::vector<Token>& tokens, int k) {
+  int ProcessVARFromVector(const std::vector<Token>& tokens, size_t k) {
     const Token& token = tokens[k];
     k++;
 
@@ -956,7 +949,7 @@ public:
     return k;
   }
 
-  int ProcessIDFromVector(const std::vector<Token>& tokens, int k) {
+  int ProcessIDFromVector(const std::vector<Token>& tokens, size_t k) {
     if (k >= tokens.size()) {
       Error(Token{}, "Unexpected end of tokens in ProcessIDFromVector");
     }
@@ -1001,7 +994,6 @@ public:
 
     if (first.id == Lexer::ID_ID || first.id == Lexer::ID_LIT_STRING || first.id == Lexer::ID_LPAREN) {
       std::vector<Token> exprTokens;
-      int exprStart = k;
       int depth = 0;
 
       while (k < tokens.size()) {
@@ -1035,7 +1027,7 @@ public:
   }
 
 
-  int ProcessLineFromVector(const std::vector<Token>& tokens, int k) {
+  int ProcessLineFromVector(const std::vector<Token>& tokens, size_t k) {
     if (k >= tokens.size()) {
       Error(Token{}, "Unexpected end of tokens in ProcessLineFromVector");
     }
@@ -1078,7 +1070,7 @@ public:
     return k;
   }
 
-  std::string CompleteCalculationFromVector(const std::vector<Token>& tokens, int k, int* outIndex = nullptr) {
+  std::string CompleteCalculationFromVector(const std::vector<Token>& tokens, size_t k, size_t* outIndex = nullptr) {
     if (k >= tokens.size()) {
       Error(Token{}, "Expected expression but reached end of tokens");
     }
@@ -1105,7 +1097,7 @@ public:
       Error(tokens[k], "Expected expression for calculation");
     }
 
-    int exprIndex = 0;
+    size_t exprIndex = 0;
     std::string result = ParseExprFromVector(expressionTokens, exprIndex);
 
     if (outIndex) {
@@ -1116,7 +1108,7 @@ public:
   }
 
 
-  std::string ParseExprFromVector(const std::vector<Token>& tokens, int& index) {
+  std::string ParseExprFromVector(const std::vector<Token>& tokens, size_t& index) {
     if (index >= tokens.size()) {
       Error(Token{}, "Expected expression but reached end of tokens");
     }
@@ -1139,7 +1131,7 @@ public:
     return left;
   }
 
-  std::string ParseTermFromVector(const std::vector<Token> &tokens, int &index) {
+  std::string ParseTermFromVector(const std::vector<Token> &tokens, size_t &index) {
     if (index >= tokens.size()) {
       Error(Token{}, "Expected term but reached end of tokens");
     }
@@ -1160,7 +1152,7 @@ public:
     return left;
   }
 
-  std::string ParsePrimaryFromVector(const std::vector<Token> &tokens, int &index) {
+  std::string ParsePrimaryFromVector(const std::vector<Token> &tokens, size_t &index) {
     if (index >= tokens.size()) {
       Error(Token{}, "Expected expression but reached end of tokens");
     }
@@ -1229,7 +1221,7 @@ public:
     }
 
     while (ParseWHILEExpression(cond)) {
-      int k = 0;
+      size_t k = 0;
       while (k < body.size()) {
         Token current = body[k];
         switch (current.id) {
